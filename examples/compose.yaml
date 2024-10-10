@@ -1,8 +1,8 @@
+version: "3"
 services:
   rqlite:
     image: rqlite/rqlite
-    ports:
-      - "4001:4001"
     volumes:
-      - ./data:/rqlite/file
-
+      - ./data:/rqlite/file/data:rw
+    entrypoint: rqlited -http-addr=localhost:4001 -node-id=1 /rqlite/file/data
+    network_mode: host
