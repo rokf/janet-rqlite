@@ -1,9 +1,10 @@
 (import spork/http)
 (import spork/json)
+(import spork/base64)
 
 (def- default-host
   "The default host for a local rqlite instance."
-  "http://localhost:4001")
+  "localhost:4001")
 
 (def- flag-to-string {:x "transaction"
                       :t "timings"
@@ -30,20 +31,28 @@
                                            :timeout timeout
                                            :db-timeout db-timeout
                                            :level level
-                                           :freshness freshness}]
+                                           :freshness freshness
+                                           :username username
+                                           :password password}]
   (default host default-host)
   (default flags @[])
   (default timeout nil)
   (default db-timeout nil)
   (default level nil)
   (default freshness nil)
-  (let [response (http/request :POST
-                               (string/format
-                                 "%s%s%s"
-                                 host
-                                 path
-                                 (query-format flags :db-timeout db-timeout :timeout timeout :level level :freshness freshness))
-                               :headers {:content-type "application/json"}
+  (default username nil)
+  (default password nil)
+  (def headers @{:content-type "application/json"})
+  (if (and (not-nil? username) (not-nil? password)) (put headers :authorization (string/format "Basic %s" (base64/encode (string username ":" password)))))
+
+  (let [http-query (string
+                     "http://" # spork/http doesn't yet support HTTPS for some reason
+                     host
+                     path
+                     (query-format flags :db-timeout db-timeout :timeout timeout :level level :freshness freshness))
+        response (http/request :POST
+                               http-query
+                               :headers headers
                                :body (json/encode queries))]
     {:data (json/decode (get response :body))
      :status (get response :status)
@@ -51,11 +60,17 @@
      :headers (get response :headers)}))
 
 
-(defn execute [queries &keys {:host host :flags flags :timeout timeout :db-timeout db-timeout :level level :freshness freshness}]
-  (rqlite-request "/db/execute" queries :host host :flags flags :timeout timeout :db-timeout db-timeout :level level :freshness freshness))
+(defn execute
+  "Makes a POST requests towards rqlite's execute API endpoint."
+  [queries &keys options]
+  (rqlite-request "/db/execute" queries ;(kvs options)))
 
-(defn query [queries &keys {:host host :flags flags :timeout timeout :db-timeout db-timeout :level level :freshness freshness}]
-  (rqlite-request "/db/query" queries :host host :flags flags :timeout timeout :db-timeout db-timeout :level level :freshness freshness))
+(defn query
+  "Makes a POST requests towards rqlite's query API endpoint."
+  [queries &keys options]
+  (rqlite-request "/db/query" queries ;(kvs options)))
 
-(defn request [queries &keys {:host host :flags flags :timeout timeout :db-timeout db-timeout :level level :freshness freshness}]
-  (rqlite-request "/db/request" queries :host host :flags flags :timeout timeout :db-timeout db-timeout :level level :freshness freshness))
+(defn request
+  "Makes a POST requests towards rqlite's request API endpoint."
+  [queries &keys options]
+  (rqlite-request "/db/request" queries ;(kvs options)))

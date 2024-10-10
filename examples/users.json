@@ -1,0 +1,9 @@
+[
+  {
+    "username": "hello",
+    "password": "world",
+    "perms": [
+      "all"
+    ]
+  }
+]

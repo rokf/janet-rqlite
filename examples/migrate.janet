@@ -1,12 +1,15 @@
 (import ../src :prefix "rqlite/")
 
-(rqlite/execute ["create table if not exists schema_version (version integer not null default 0)"])
+(def- credentials {:username "hello"
+                   :password "world"})
+
+(rqlite/execute ["create table if not exists schema_version (version integer not null default 0)"] ;(kvs credentials))
 
 # Prepare the schema_version table if it was just created.
 (if (= (get-in
-         (rqlite/query ["select count(*) as row_count from schema_version"] :flags [:a])
+         (rqlite/query ["select count(*) as row_count from schema_version"] :flags [:a] ;(kvs credentials))
          [:data "results" 0 "rows" 0 "row_count"]) 0)
-  (rqlite/execute ["insert into schema_version (version) values (0)"]))
+  (rqlite/execute ["insert into schema_version (version) values (0)"] ;(kvs credentials)))
 
 # These are the schema migrations for the database. Never remove migrations or add them
 # in the middle. Add them to the end of the list.
@@ -18,9 +21,9 @@
 (array/push migrations ["update schema_version set version = ?" (length migrations)])
 
 # Execute the migrations, skipping over the already used ones.
-(let [schema-version (get-in (rqlite/query ["select version from schema_version"] :flags [:a]) [:data "results" 0 "rows" 0 "version"])] (print "starting from schema version " schema-version)
-  (let [migration-result (rqlite/execute (array/slice migrations schema-version) :flags [:x])
+(let [schema-version (get-in (rqlite/query ["select version from schema_version"] :flags [:a] ;(kvs credentials)) [:data "results" 0 "rows" 0 "version"])] (print "starting from schema version " schema-version)
+  (let [migration-result (rqlite/execute (array/slice migrations schema-version) :flags [:x] ;(kvs credentials))
         err (get-in migration-result [:data "results" 0 "error"])] (if err (error (string "there was an error - " err)))))
 
 (print "new schema version is "
-       (get-in (rqlite/query ["select version from schema_version"] :flags [:a]) [:data "results" 0 "rows" 0 "version"]))
+       (get-in (rqlite/query ["select version from schema_version"] :flags [:a] ;(kvs credentials)) [:data "results" 0 "rows" 0 "version"]))

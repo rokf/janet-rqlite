@@ -4,5 +4,6 @@ services:
     image: rqlite/rqlite
     volumes:
       - ./data:/rqlite/file/data:rw
-    entrypoint: rqlited -http-addr=localhost:4001 -node-id=1 /rqlite/file/data
+      - ./users.json:/rqlite/file/users.json
+    entrypoint: rqlited -http-addr=localhost:4001 -node-id=1 -auth=/rqlite/file/users.json /rqlite/file/data
     network_mode: host
