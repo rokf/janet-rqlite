@@ -33,7 +33,9 @@
                                            :level level
                                            :freshness freshness
                                            :username username
-                                           :password password}]
+                                           :password password
+                                           :request-fn request-fn
+                                           :scheme scheme}]
   (default host default-host)
   (default flags @[])
   (default timeout nil)
@@ -42,18 +44,21 @@
   (default freshness nil)
   (default username nil)
   (default password nil)
+  (default request-fn http/request)
+  (default scheme "http")
   (def headers @{:content-type "application/json"})
   (if (and (not-nil? username) (not-nil? password)) (put headers :authorization (string/format "Basic %s" (base64/encode (string username ":" password)))))
 
   (let [http-query (string
-                     "http://" # spork/http doesn't yet support HTTPS for some reason
+                     scheme
+                     "://"
                      host
                      path
                      (query-format flags :db-timeout db-timeout :timeout timeout :level level :freshness freshness))
-        response (http/request :POST
-                               http-query
-                               :headers headers
-                               :body (json/encode queries))
+        response (request-fn :POST
+                             http-query
+                             :headers headers
+                             :body (json/encode queries))
         data (json/decode (get response :body))
         extract-error (fn [results]
                         # @TODO optimize this
