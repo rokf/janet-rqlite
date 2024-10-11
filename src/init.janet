@@ -53,11 +53,19 @@
         response (http/request :POST
                                http-query
                                :headers headers
-                               :body (json/encode queries))]
-    {:data (json/decode (get response :body))
+                               :body (json/encode queries))
+        data (json/decode (get response :body))
+        extract-error (fn [results]
+                        # @TODO optimize this
+                        (let [result-with-error (find (fn [result]
+                                                        (not-nil? (get result "error"))) results nil)]
+                          (if (not-nil? result-with-error) (get result-with-error "error") nil)))]
+
+    {:data data
      :status (get response :status)
      :message (get response :message)
-     :headers (get response :headers)}))
+     :headers (get response :headers)
+     :error (extract-error (get data "results"))}))
 
 
 (defn execute

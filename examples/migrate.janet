@@ -23,7 +23,7 @@
 # Execute the migrations, skipping over the already used ones.
 (let [schema-version (get-in (rqlite/query ["select version from schema_version"] :flags [:a] ;(kvs credentials)) [:data "results" 0 "rows" 0 "version"])] (print "starting from schema version " schema-version)
   (let [migration-result (rqlite/execute (array/slice migrations schema-version) :flags [:x] ;(kvs credentials))
-        err (get-in migration-result [:data "results" 0 "error"])] (if err (error (string "there was an error - " err)))))
+        err (get migration-result :error)] (if err (error (string "there was an error - " err)))))
 
 (print "new schema version is "
        (get-in (rqlite/query ["select version from schema_version"] :flags [:a] ;(kvs credentials)) [:data "results" 0 "rows" 0 "version"]))
